@@ -1,0 +1,3 @@
+components/analyzer/PayoffDiagramCard.tsx
+README_PAYOFF_DIAGRAM_LABEL_SPACING_FIX_V2.md
+MANIFEST.txt

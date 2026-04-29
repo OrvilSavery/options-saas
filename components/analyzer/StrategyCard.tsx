@@ -7,40 +7,48 @@ interface StrategyCardProps {
 export default function StrategyCard({ bestStrategy }: StrategyCardProps) {
   if (!bestStrategy) {
     return (
-      <div className="rounded-lg border border-zinc-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-zinc-900 mb-2">Best Strategy</h3>
-        <p className="text-sm text-zinc-400">No strategy identified for this ticker right now.</p>
-      </div>
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Top-ranked strategy</h3>
+        <p className="mt-3 text-sm text-zinc-500">No strategy qualified for a current recommendation.</p>
+      </section>
     );
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5">
-      <h3 className="text-sm font-semibold text-zinc-900 mb-3">Best Strategy</h3>
-      <div className="space-y-2 text-sm">
-        <div className="flex items-baseline justify-between">
-          <span className="font-medium text-zinc-900">{bestStrategy.strategy}</span>
-          <span className="text-zinc-500">{bestStrategy.expiration}</span>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Top-ranked strategy</h3>
+          <p className="mt-2 text-xl font-semibold text-zinc-950">{bestStrategy.strategy}</p>
+          <p className="mt-1 text-sm font-medium text-zinc-700">{bestStrategy.setupLabel}</p>
         </div>
-        <p className="text-zinc-700 font-medium">{bestStrategy.setupLabel}</p>
-        <div className="flex gap-6 pt-1">
-          {bestStrategy.premium !== null && (
-            <div>
-              <span className="text-xs text-zinc-400 block">Premium</span>
-              <span className="font-semibold text-zinc-900">${bestStrategy.premium.toFixed(2)}</span>
-            </div>
-          )}
-          {bestStrategy.returnOnRisk !== null && (
-            <div>
-              <span className="text-xs text-zinc-400 block">Return on Risk</span>
-              <span className="font-semibold text-zinc-900">
-                {(bestStrategy.returnOnRisk * 100).toFixed(1)}%
-              </span>
-            </div>
-          )}
+        <div className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          <p>Expiration: <span className="font-medium text-zinc-900">{bestStrategy.expiration}</span></p>
         </div>
-        <p className="text-zinc-600 pt-2 leading-relaxed">{bestStrategy.whyTopRanked}</p>
       </div>
-    </div>
+
+      <div className="mt-5 flex flex-wrap gap-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Premium</p>
+          <p className="mt-1 text-lg font-semibold text-zinc-950">
+            {bestStrategy.premium !== null ? `$${bestStrategy.premium.toFixed(2)}` : "—"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Return on risk</p>
+          <p className="mt-1 text-lg font-semibold text-zinc-950">
+            {bestStrategy.returnOnRisk !== null
+              ? `${(bestStrategy.returnOnRisk * 100).toFixed(1)}%`
+              : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-xl bg-zinc-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Why it ranked first</p>
+        <p className="mt-2 text-sm leading-6 text-zinc-700">{bestStrategy.whyTopRanked}</p>
+      </div>
+    </section>
   );
 }

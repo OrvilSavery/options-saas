@@ -1,43 +1,42 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { supabaseAdmin } from './db'
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { supabaseAdmin } from "./db";
 
 export async function ensureUserRecord() {
-  const { userId } = await auth()
+  const { userId } = await auth();
 
   if (!userId) {
-    return null
+    return null;
   }
 
-  const clerkUser = await currentUser()
-
-  const email = clerkUser?.emailAddresses?.[0]?.emailAddress ?? null
-
   const { data: existingUser, error: findError } = await supabaseAdmin
-    .from('users')
-    .select('*')
-    .eq('clerk_user_id', userId)
-    .maybeSingle()
+    .from("users")
+    .select("*")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
 
   if (findError) {
-    throw new Error(`Failed to look up user: ${findError.message}`)
+    throw new Error(`Failed to look up user: ${findError.message}`);
   }
 
   if (existingUser) {
-    return existingUser
+    return existingUser;
   }
 
+  const clerkUser = await currentUser();
+  const email = clerkUser?.emailAddresses?.[0]?.emailAddress ?? null;
+
   const { data: newUser, error: insertError } = await supabaseAdmin
-    .from('users')
+    .from("users")
     .insert({
       clerk_user_id: userId,
       email,
     })
     .select()
-    .single()
+    .single();
 
   if (insertError) {
-    throw new Error(`Failed to create user: ${insertError.message}`)
+    throw new Error(`Failed to create user: ${insertError.message}`);
   }
 
-  return newUser
+  return newUser;
 }

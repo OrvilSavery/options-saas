@@ -5,28 +5,32 @@ interface RiskCardProps {
 
 export default function RiskCard({ risks, explanation }: RiskCardProps) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-5">
-      <h3 className="text-sm font-semibold text-zinc-900 mb-3">Risks</h3>
-      {risks.length > 0 ? (
-        <ul className="space-y-1.5 mb-4">
-          {risks.map((risk, i) => (
-            <li key={i} className="text-sm text-zinc-600 flex gap-2">
-              <span className="text-zinc-400 shrink-0">•</span>
-              <span>{risk}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-zinc-400 mb-4">No specific risks flagged.</p>
-      )}
-      {explanation && (
-        <div className="border-t border-zinc-100 pt-3">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-            Summary
-          </span>
-          <p className="text-sm text-zinc-600 mt-1 leading-relaxed">{explanation}</p>
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Risks and summary</h3>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-xl bg-zinc-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Main risks</p>
+
+          {risks.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {risks.map((risk) => (
+                <li key={risk} className="flex gap-2 text-sm leading-6 text-zinc-700">
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-400" />
+                  <span>{risk}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-sm text-zinc-500">No specific risks flagged.</p>
+          )}
         </div>
-      )}
-    </div>
+
+        <div className="rounded-xl bg-zinc-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Structured summary</p>
+          <p className="mt-3 text-sm leading-6 text-zinc-700">{explanation}</p>
+        </div>
+      </div>
+    </section>
   );
 }

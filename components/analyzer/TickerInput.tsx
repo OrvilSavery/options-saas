@@ -1,43 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface TickerInputProps {
   onSubmit: (ticker: string) => void;
   disabled?: boolean;
+  initialValue?: string;
 }
 
-export default function TickerInput({ onSubmit, disabled }: TickerInputProps) {
-  const [value, setValue] = useState("");
+export default function TickerInput({
+  onSubmit,
+  disabled = false,
+  initialValue = "",
+}: TickerInputProps) {
+  const [value, setValue] = useState(initialValue);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
     const trimmed = value.trim().toUpperCase();
-    if (trimmed === "") return;
+    if (!trimmed) return;
+
     onSubmit(trimmed);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-3 items-center">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value.toUpperCase())}
-        placeholder="Enter ticker (e.g. SPY)"
-        disabled={disabled}
-        maxLength={10}
-        autoCapitalize="characters"
-        autoCorrect="off"
-        spellCheck={false}
-        className="px-4 py-2.5 rounded-lg border border-zinc-300 bg-white text-zinc-900 text-sm font-medium tracking-wide placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 w-48"
-      />
-      <button
-        type="submit"
-        disabled={disabled || value.trim() === ""}
-        className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        Analyze
-      </button>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          type="text"
+          value={value}
+          onChange={(event) => setValue(event.target.value.toUpperCase())}
+          placeholder="Enter ticker (e.g. SPY)"
+          maxLength={10}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          disabled={disabled}
+          className="h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium tracking-wide text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-xs"
+        />
+        <button
+          type="submit"
+          disabled={disabled || value.trim() === ""}
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Run analysis
+        </button>
+      </div>
+      <p className="text-sm text-zinc-500">
+        V1 uses mocked market logic through a stable response contract. Real data providers plug into the same analysis layer later.
+      </p>
     </form>
   );
 }
