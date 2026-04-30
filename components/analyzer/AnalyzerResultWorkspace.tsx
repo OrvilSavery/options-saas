@@ -348,7 +348,13 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
         ) : null}
       </section>
 
+      <p className="rounded-[10px] border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs text-slate-500">
+        Delayed data. Confirm live pricing in your broker before entry.
+      </p>
+
       <DataTransparencyPanel metadata={data.metadata} />
+
+      <MarketBackdropCard eventRisk={data.eventRisk} />
 
       <EventMacroRiskPanel
         eventRisk={data.eventRisk}
@@ -409,6 +415,22 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
         }}
       />
     </div>
+  );
+}
+
+function MarketBackdropCard({ eventRisk }: { eventRisk: EventRisk }) {
+  return (
+    <section className="rounded-[10px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Market backdrop</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        EntryCheck is reviewing the setup structure, not live execution. Before entry, check live bid/ask, major events before expiration, and whether price is moving quickly toward the short strike.
+      </p>
+      {(eventRisk === "medium" || eventRisk === "high") ? (
+        <p className="mt-2 text-sm leading-6 text-amber-800">
+          Event risk is worth checking before entry.
+        </p>
+      ) : null}
+    </section>
   );
 }
 

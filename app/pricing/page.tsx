@@ -12,38 +12,66 @@ export default function PricingPage() {
           description="EntryCheck is built for serious retail users who want faster, more structured premium-selling reviews. The product is intentionally narrow: analyze one ticker, frame the tradeoffs clearly, and keep the result readable."
         />
 
-        <section className="grid gap-4 lg:grid-cols-2">
+        <section className="grid gap-4 lg:grid-cols-3">
           <PricingTierCard
-            name="Starter"
-            price="$19/mo"
-            description="For users who want a structured analyzer workflow without unnecessary complexity."
+            name="Free"
+            price="$0/mo"
+            description="Get started with the core review workflow. No payment required."
             features={[
-              "Single-ticker analyzer workflow",
-              "Structured recommendation, alternatives, and risks",
-              "Saved analysis history",
-              "Watchlist workflow",
-              "Good fit for early recurring users",
+              "3 delayed-data reviews/month",
+              "1 saved review",
+              "1 watchlist ticker",
+              "7-day history",
+              "Basic verdict, metrics, and risk flags",
             ]}
-            ctaLabel="Get started"
+            ctaLabel="Start free"
             ctaHref="/dashboard"
           />
 
           <PricingTierCard
-            name="Pro"
-            price="$39/mo"
-            description="For users who want a more complete review workspace as richer layers are added over time."
+            name="Starter"
+            price="$15/mo"
+            description="For users who want a fuller review workflow without unnecessary complexity."
             features={[
-              "Everything in Starter",
-              "Priority access to richer analysis views later",
-              "Deeper saved workflow and review features later",
-              "Best fit for users planning to rely on the app regularly",
-              "Positioned as the long-term primary plan",
+              "10 delayed-data reviews/month",
+              "5 watchlist tickers",
+              "25 saved reviews",
+              "6-month history",
+              "Setup comparison",
+              "Event risk panel",
+              "Data quality panel",
+              "Plain-English interpretation",
             ]}
-            ctaLabel="Open app"
-            ctaHref="/dashboard"
+            ctaLabel="Coming soon"
+            ctaDisabled
+          />
+
+          <PricingTierCard
+            name="Pro"
+            price="$29/mo"
+            description="For users who want a more complete review workspace as richer layers are added."
+            features={[
+              "15 delayed-data reviews/month",
+              "10 watchlist tickers",
+              "50 saved reviews",
+              "12-month history",
+              "Market backdrop panel",
+              "Event/catalyst aggregation",
+              "Richer evidence layer",
+              "Historical setup comparison (coming)",
+            ]}
+            ctaLabel="Coming soon"
+            ctaDisabled
             badge="Primary plan direction"
             emphasized
           />
+        </section>
+
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <p className="text-sm leading-6 text-amber-900">
+            <span className="font-semibold">Delayed data notice: </span>
+            EntryCheck uses delayed market and options data for setup review. It is not an execution tool. Always confirm live prices, spreads, and availability in your broker before entering a trade.
+          </p>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-3">
@@ -61,7 +89,7 @@ export default function PricingPage() {
               What it is not
             </p>
             <p className="mt-3 text-sm leading-6 text-zinc-600">
-              This is not a hype-heavy AI picker, a promise engine, or a substitute for deterministic trade logic.
+              This is not a hype-heavy AI picker, a promise engine, a real-time execution tool, or a substitute for deterministic trade logic.
             </p>
           </div>
 

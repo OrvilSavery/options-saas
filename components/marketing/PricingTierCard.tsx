@@ -6,7 +6,8 @@ interface PricingTierCardProps {
   description: string;
   features: string[];
   ctaLabel: string;
-  ctaHref: string;
+  ctaHref?: string;
+  ctaDisabled?: boolean;
   badge?: string;
   emphasized?: boolean;
 }
@@ -17,7 +18,8 @@ export default function PricingTierCard({
   description,
   features,
   ctaLabel,
-  ctaHref,
+  ctaHref = "#",
+  ctaDisabled = false,
   badge,
   emphasized = false,
 }: PricingTierCardProps) {
@@ -80,16 +82,28 @@ export default function PricingTierCard({
         ))}
       </ul>
 
-      <Link
-        href={ctaHref}
-        className={`mt-8 inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition ${
-          emphasized
-            ? "bg-white text-zinc-950 hover:bg-zinc-100"
-            : "bg-zinc-900 text-white hover:bg-zinc-800"
-        }`}
-      >
-        {ctaLabel}
-      </Link>
+      {ctaDisabled ? (
+        <button
+          type="button"
+          disabled
+          className={`mt-8 inline-flex h-11 w-full cursor-not-allowed items-center justify-center rounded-xl px-5 text-sm font-semibold ${
+            emphasized ? "bg-zinc-700 text-zinc-400" : "bg-zinc-200 text-zinc-400"
+          }`}
+        >
+          {ctaLabel}
+        </button>
+      ) : (
+        <Link
+          href={ctaHref}
+          className={`mt-8 inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition ${
+            emphasized
+              ? "bg-white text-zinc-950 hover:bg-zinc-100"
+              : "bg-zinc-900 text-white hover:bg-zinc-800"
+          }`}
+        >
+          {ctaLabel}
+        </Link>
+      )}
     </section>
   );
 }
