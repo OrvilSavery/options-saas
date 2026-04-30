@@ -47,31 +47,57 @@ function postureLabel(decision: Decision) {
 }
 
 function warmHeadline(decision: Decision) {
-  if (decision === "valid") return "This looks like a usable setup.";
-  if (decision === "watchlist") return "Worth watching, but not clean enough right now.";
-  return "This one doesn’t look great right now.";
+  if (decision === "valid") return "This looks workable.";
+  if (decision === "watchlist") return "Close, but something feels tight.";
+  return "This one doesn’t line up well.";
+}
+
+function buildHumanInterpretation(
+  decision: Decision,
+  setup: ComparedSetup | null
+): string {
+  const room = setup?.downsideRoom;
+  const dte = setup?.daysToExpiration;
+  const creditRatio =
+    setup?.width && setup.premium != null && setup.width > 0
+      ? setup.premium / setup.width
+      : null;
+
+  if (decision === "valid") {
+    if (room != null && room >= 0.08) {
+      return "There’s decent room to the short strike and the risk is capped. Check the details before entry.";
+    }
+    if (room != null && room >= 0.05) {
+      return "Some room and a defined risk. Not wide, but it holds up.";
+    }
+    return "The risk is defined and the structure holds up. Not a lot of slack, but it clears.";
+  }
+
+  if (decision === "watchlist") {
+    if (room != null && room < 0.04) {
+      return "Not much room to the short strike. That’s the main thing holding this one back.";
+    }
+    if (dte != null && dte < 15) {
+      return "Not much time left. Less room to manage if price moves against you.";
+    }
+    if (creditRatio != null && creditRatio < 0.15) {
+      return "The credit is thin for the risk. That’s the weak spot here.";
+    }
+    return "Something here isn’t quite right. Probably better to watch it for now.";
+  }
+
+  if (room != null && room < 0.03) {
+    return "The stock is right up against your short strike. Almost no room if price moves against you.";
+  }
+  if (creditRatio != null && creditRatio < 0.12) {
+    return "You’re not collecting much for the risk. The credit doesn’t justify the exposure.";
+  }
+  return "This one is stretched — not enough room, or the credit doesn’t justify the risk.";
 }
 
 function formatCurrency(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(value)) return "—";
   return `$${value.toFixed(digits)}`;
-}
-
-function strikeText(setup: ComparedSetup | null) {
-  if (!setup || setup.shortStrike == null || setup.longStrike == null) return "—";
-  return `${setup.shortStrike}/${setup.longStrike}`;
-}
-
-function setupSummary(ticker: string, setup: ComparedSetup | null) {
-  if (!setup) return `${ticker} · No setup selected`;
-  const pieces = [
-    ticker,
-    setup.strategy,
-    setup.expiration,
-    strikeText(setup),
-    setup.premium != null ? `${formatCurrency(setup.premium)} credit` : null,
-  ];
-  return pieces.filter(Boolean).join(" · ");
 }
 
 function formatTimestamp(value: string | null | undefined) {
@@ -105,11 +131,11 @@ function buildExplanation({
 }) {
   if (decision === "pass" && setup) {
     const room = formatPercentValue(setup.downsideRoom);
-    const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} DTE` : null;
+    const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} days` : null;
     if (room && dte) {
       return (
         <>
-          Your short strike is only <NumberText>{room}</NumberText> from the current price with <NumberText>{dte}</NumberText> left. That gives the trade very little room to work if price moves against you.
+          Short strike is <NumberText>{room}</NumberText> from current price with <NumberText>{dte}</NumberText> left. Not much room if things move against you.
         </>
       );
     }
@@ -117,26 +143,34 @@ function buildExplanation({
 
   if (decision === "watchlist" && setup) {
     const room = formatPercentValue(setup.downsideRoom);
-    const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} DTE` : null;
+    const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} days` : null;
     if (room && dte) {
       return (
         <>
-          The setup has some things going for it, but <NumberText>{room}</NumberText> room and <NumberText>{dte}</NumberText> keep it from looking clean.
+          <NumberText>{room}</NumberText> of room and <NumberText>{dte}</NumberText> — that&apos;s what&apos;s keeping it from looking clean.
         </>
       );
     }
-    return <>The setup has some things going for it, but one or more risk checks keep it from looking clean.</>;
+    return <>One or more things aren&apos;t clearing the review rules.</>;
   }
 
-  if (decision === "valid" && setup?.downsideRoom != null) {
-    return (
-      <>
-        The setup leaves <NumberText>{formatPercentValue(setup.downsideRoom)}</NumberText> to the short strike, with capped max loss and enough room to review further.
-      </>
-    );
+  if (decision === "valid" && setup) {
+    const room = formatPercentValue(setup.downsideRoom);
+    const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} days` : null;
+    if (room && dte) {
+      return (
+        <>
+          <NumberText>{room}</NumberText> to the short strike, <NumberText>{dte}</NumberText> left. It holds up.
+        </>
+      );
+    }
+    if (room) {
+      return <><NumberText>{room}</NumberText> to the short strike, capped max loss.</>;
+    }
   }
 
-  return explanation ? <>{explanation}</> : <>Review the setup, risk flags, and nearby alternatives before entry.</>;
+  return explanation ? <>{explanation}</> : <>Look at the risk flags and alternatives for the full picture.</>;
+
 }
 
 function NumberText({ children }: { children: React.ReactNode }) {
@@ -223,15 +257,15 @@ export default function RecommendedSetupHero({
           {postureLabel(decision)}
         </h2>
 
-        <p className="mt-3 text-[15px] leading-6 text-slate-600">
+        <p className="mt-3 text-[15px] leading-6 text-slate-700">
           {warmHeadline(decision)}
         </p>
 
-        <p className="mt-4 font-mono text-xs leading-5 text-slate-400">
-          {setupSummary(ticker, activeComparedSetup)} · {formatCurrency(price)} spot
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          {buildHumanInterpretation(decision, activeComparedSetup)}
         </p>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
           {buildExplanation({ decision, setup: activeComparedSetup, price, explanation })}
         </p>
       </div>

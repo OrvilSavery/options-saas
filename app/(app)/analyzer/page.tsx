@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type {
   AnalysisEvidence,
   AnalysisResponse,
@@ -162,6 +162,7 @@ function buildCollapsedSummary(
 }
 
 export default function AnalyzerPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [request, setRequest] = useState<AnalyzeRequest>(initialRequest);
@@ -231,9 +232,10 @@ export default function AnalyzerPage() {
         setAnalysisMode(nextMode);
         setIsEntryExpanded(true);
         autorunKeyRef.current = null;
+        router.replace("/analyzer");
       }
     },
-    [request.mode]
+    [request.mode, router]
   );
 
   const runAnalysis = useCallback(
@@ -312,7 +314,7 @@ export default function AnalyzerPage() {
         onSubmit={() => runAnalysis()}
         isLoading={isLoading}
         isCollapsed={Boolean(analysis) && !isEntryExpanded && !isLoading}
-        onExpand={() => { setIsEntryExpanded(true); setAnalysis(null); setError(null); }}
+        onExpand={() => { setIsEntryExpanded(true); setAnalysis(null); setError(null); router.replace("/analyzer"); }}
         summary={collapsedSummary}
       />
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -44,12 +45,37 @@ function BillingIcon() {
   );
 }
 
+function HamburgerIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M4.293 4.293a1 1 0 0 1 1.414 0L10 8.586l4.293-4.293a1 1 0 1 1 1.414 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L8.586 10 4.293 5.707a1 1 0 0 1 0-1.414Z"
+      />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 20 20" className="h-5 w-5">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M2 5h16v1.5H2V5Zm0 4.25h16v1.5H2v-1.5Zm0 4.25h16v1.5H2v-1.5Z"
+      />
+    </svg>
+  );
+}
+
 export default function AppTopbar() {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 h-[52px] border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex h-full items-center justify-between px-5 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="flex h-[52px] items-center justify-between px-5 sm:px-6">
         <div className="flex min-w-0 items-center gap-7">
           <Link
             href="/dashboard"
@@ -83,7 +109,17 @@ export default function AppTopbar() {
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center">
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 sm:hidden"
+          >
+            <HamburgerIcon open={mobileMenuOpen} />
+          </button>
+
           <UserButton
             appearance={{
               elements: {
@@ -108,6 +144,31 @@ export default function AppTopbar() {
           </UserButton>
         </div>
       </div>
+
+      {mobileMenuOpen ? (
+        <nav
+          aria-label="Mobile navigation"
+          className="border-t border-slate-100 bg-white px-4 pb-3 pt-2 sm:hidden"
+        >
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={[
+                  "block rounded-md px-3 py-2.5 text-[14px] transition",
+                  isActive
+                    ? "bg-slate-100 font-semibold text-slate-950"
+                    : "font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                ].join(" ")}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </header>
   );
 }

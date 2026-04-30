@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AnalysisEvidence, AnalysisResponse, ComparedSetup } from "@/types/analysis";
+import type { AnalysisEvidence, AnalysisResponse, ComparedSetup, EventRisk } from "@/types/analysis";
 import RecommendedSetupHero from "@/components/analyzer/RecommendedSetupHero";
 import SetupMapCard from "@/components/analyzer/SetupMapCard";
 import EventMacroRiskPanel from "@/components/analyzer/EventMacroRiskPanel";
@@ -90,7 +90,33 @@ function deriveMaxLoss(setup: ComparedSetup | null) {
   return Math.max(0, setup.width - setup.premium);
 }
 
-function buildDisplayRisks(setup: ComparedSetup | null, fallbackRisks: string[]): DisplayRiskFlag[] {
+function buildRoomMeaning(room: number | null | undefined): string {
+  if (room == null) return "Distance between current price and your short strike.";
+  const pct = (room * 100).toFixed(1);
+  if (room < 0.04) return `Stock can fall about ${pct}% before hitting your short strike. That's tight.`;
+  if (room < 0.08) return `Stock can fall about ${pct}% before hitting your short strike. Not much room.`;
+  return `Stock can fall about ${pct}% before hitting your short strike. That gives you some breathing room.`;
+}
+
+function buildCreditMeaning(premium: number | null | undefined, width: number | null | undefined): string {
+  if (premium == null) return "You collect this upfront.";
+  if (width != null && width > 0) {
+    const ratio = premium / width;
+    if (ratio < 0.15) return "You collect this upfront. Not much for the risk involved.";
+    if (ratio > 0.25) return "You collect this upfront. Higher credit usually means more risk.";
+  }
+  return "You collect this upfront.";
+}
+
+function buildDteMeaning(dte: number | null | undefined): string {
+  if (dte == null) return "Days remaining on this trade.";
+  if (dte <= 0) return "Expires today. No time left to manage if things go wrong.";
+  if (dte < 10) return `${Math.round(dte)} days left. Very little time if things go wrong.`;
+  if (dte < 21) return `${Math.round(dte)} days left. Not much time if price moves against you.`;
+  return `About ${Math.round(dte)} days left.`;
+}
+
+function buildDisplayRisks(setup: ComparedSetup | null, fallbackRisks: string[], eventRisk?: EventRisk): DisplayRiskFlag[] {
   if (!setup) return fallbackRisks.slice(0, 2).map((text) => ({ text, severity: "warning" as const }));
 
   const flags: DisplayRiskFlag[] = [];
@@ -98,19 +124,19 @@ function buildDisplayRisks(setup: ComparedSetup | null, fallbackRisks: string[])
   if (setup.daysToExpiration != null && setup.daysToExpiration <= 0) {
     flags.push({
       severity: "danger",
-      text: "0 DTE means this expires today — there is almost no time to manage the setup if price moves against you.",
+      text: "This expires today. There's almost no time to manage the position if price moves against you.",
     });
   } else if (setup.daysToExpiration != null && setup.daysToExpiration < 10) {
     flags.push({
       severity: "warning",
-      text: `${Math.round(setup.daysToExpiration)} DTE leaves a short management window if price moves toward the short strike.`,
+      text: `${Math.round(setup.daysToExpiration)} days left. Not much time if price moves against you.`,
     });
   }
 
   if (setup.downsideRoom != null && setup.downsideRoom <= 0.04) {
     flags.push({
       severity: flags.some((flag) => flag.severity === "danger") ? "warning" : setup.downsideRoom < 0.03 ? "danger" : "warning",
-      text: `Your short strike is only ${(setup.downsideRoom * 100).toFixed(1)}% from the current price — that is uncomfortably close for a credit spread. A small move puts the spread under pressure fast.`,
+      text: `Your short strike is ${(setup.downsideRoom * 100).toFixed(1)}% from current price. A small move puts the trade under pressure fast.`,
     });
   }
 
@@ -119,9 +145,21 @@ function buildDisplayRisks(setup: ComparedSetup | null, fallbackRisks: string[])
     if (creditPctWidth < 0.15) {
       flags.push({
         severity: "warning",
-        text: `You're collecting ${formatCurrency(setup.premium)} on a $${setup.width.toFixed(0)} spread — that's a ${(creditPctWidth * 100).toFixed(1)}% credit-to-width, which is thin for the exposure.`,
+        text: `Collecting ${formatCurrency(setup.premium)} on a $${setup.width.toFixed(0)} spread. That's thin for the risk.`,
       });
     }
+  }
+
+  if (flags.length < 2 && eventRisk === "high") {
+    flags.push({
+      severity: "warning",
+      text: "Earnings or a major event before expiration could cause a sharp move. That can blow through the spread fast.",
+    });
+  } else if (flags.length < 2 && eventRisk === "medium") {
+    flags.push({
+      severity: "warning",
+      text: "Something may be happening before expiration. Worth a look.",
+    });
   }
 
   for (const risk of fallbackRisks) {
@@ -133,7 +171,8 @@ function buildDisplayRisks(setup: ComparedSetup | null, fallbackRisks: string[])
         (existing.includes("dte") && normalizedRisk.includes("dte")) ||
         (existing.includes("short strike") && normalizedRisk.includes("short strike")) ||
         (existing.includes("premium") && normalizedRisk.includes("premium")) ||
-        (existing.includes("expiration") && normalizedRisk.includes("time window"))
+        (existing.includes("expiration") && normalizedRisk.includes("time window")) ||
+        (existing.includes("event") && normalizedRisk.includes("event"))
       );
     });
     if (!duplicate) flags.push({ text: risk, severity: "warning" });
@@ -262,7 +301,7 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
     }
   }
 
-  const visibleRisks = buildDisplayRisks(activeComparedSetup, data.risks);
+  const visibleRisks = buildDisplayRisks(activeComparedSetup, data.risks, data.eventRisk);
   const riskOpen = data.decision === "pass" || data.decision === "watchlist";
 
   return (
@@ -293,6 +332,8 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
         <RiskFlags risks={visibleRisks} isOpen={riskOpen} />
       </div>
 
+      <SetupConditions setup={activeComparedSetup} decision={data.decision} />
+
       <div className="h-2" />
 
       <section id="setup-map-section" className="overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm">
@@ -301,9 +342,8 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
           <span className="rounded-md border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-500">{showPriceContext ? "Hide chart" : "Show chart"}</span>
         </button>
         {showPriceContext ? (
-          <div className="border-t border-slate-100 p-4">
-            <SetupMapCard ticker={data.ticker} currentPrice={data.price} activeComparedSetup={activeComparedSetup} decision={data.decision} />
-            <p className="mt-3 text-sm leading-6 text-slate-500">Price is sitting close to your short strike, so there’s less room for error.</p>
+          <div className="border-t border-slate-100">
+            <SetupMapCard ticker={data.ticker} currentPrice={data.price} activeComparedSetup={activeComparedSetup} />
           </div>
         ) : null}
       </section>
@@ -382,11 +422,11 @@ function MetricsRow({ setup }: { setup: ComparedSetup | null }) {
 
   return (
     <section className="grid overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm sm:grid-cols-5">
-      <Metric label="Strikes" value={strikes} subtitle={width != null ? `$${width.toFixed(0)} wide` : "spread"} helpText="Short strike / long strike for the spread." />
-      <Metric label="Premium" value={formatCurrency(setup?.premium)} subtitle={premiumSubtitle.text} subtitleClassName={premiumSubtitle.className} helpText="Credit collected before fees." />
-      <Metric label="Max loss" value={formatCurrency(maxLoss)} subtitle="max you can lose" helpText="Largest possible loss on the spread before fees." />
-      <Metric label="Room" value={formatPercent(setup?.downsideRoom)} subtitle={roomSubtitle.text} subtitleClassName={roomSubtitle.className} barClassName={roomSubtitle.barClassName} fill={roomSubtitle.fill} helpText="How far the current price is from the short strike." />
-      <Metric label="DTE" value={setup?.daysToExpiration?.toString() ?? "—"} subtitle={dteSubtitle.text} subtitleClassName={dteSubtitle.className} barClassName={dteSubtitle.barClassName} fill={dteSubtitle.fill} helpText="Days until expiration." />
+      <Metric label="Strikes" value={strikes} subtitle={width != null ? `$${width.toFixed(0)} wide` : "spread"} helpText="Short strike / long strike. Where your risk boundaries sit." meaning="The two prices that define your spread." />
+      <Metric label="Credit (Premium)" value={formatCurrency(setup?.premium)} subtitle={premiumSubtitle.text} subtitleClassName={premiumSubtitle.className} helpText="Credit received (premium). Amount collected upfront before fees." meaning={buildCreditMeaning(setup?.premium, setup?.width)} />
+      <Metric label="Max you can lose" value={formatCurrency(maxLoss)} subtitle="defined max loss" helpText="Max you can lose = spread width – premium collected." meaning="The most you can lose if the trade goes fully against you." />
+      <Metric label="Room to strike" value={formatPercent(setup?.downsideRoom)} subtitle={roomSubtitle.text} subtitleClassName={roomSubtitle.className} barClassName={roomSubtitle.barClassName} fill={roomSubtitle.fill} helpText="Room to short strike (downside room). How far price can move before pressure builds." meaning={buildRoomMeaning(setup?.downsideRoom)} />
+      <Metric label="Days left (DTE)" value={setup?.daysToExpiration?.toString() ?? "—"} subtitle={dteSubtitle.text} subtitleClassName={dteSubtitle.className} barClassName={dteSubtitle.barClassName} fill={dteSubtitle.fill} helpText="Days left until expiration (DTE). Less time = less room to manage." meaning={buildDteMeaning(setup?.daysToExpiration)} />
     </section>
   );
 }
@@ -399,6 +439,7 @@ function Metric({
   barClassName,
   fill,
   helpText,
+  meaning,
 }: {
   label: string;
   value: string;
@@ -407,6 +448,7 @@ function Metric({
   barClassName?: string;
   fill?: number;
   helpText?: string;
+  meaning?: string;
 }) {
   return (
     <div className="border-b border-slate-100 px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
@@ -428,7 +470,64 @@ function Metric({
           <div className={`h-full rounded-full ${barClassName}`} style={{ width: `${fill ?? 0}%` }} />
         </div>
       ) : null}
+      {meaning ? <p className="mt-2 text-[11px] leading-4 text-slate-400">{meaning}</p> : null}
     </div>
+  );
+}
+
+function SetupConditions({
+  setup,
+  decision,
+}: {
+  setup: ComparedSetup | null;
+  decision: string;
+}) {
+  if (!setup || decision === "pass") return null;
+
+  const strategy = setup.strategy?.toLowerCase() ?? "";
+  const isBullish = strategy.includes("put") || !strategy.includes("call");
+  const priceDir = isBullish ? "above" : "below";
+  const moveDir = isBullish ? "drops" : "rallies";
+
+  return (
+    <section className="overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm">
+      <div className="grid gap-0 sm:grid-cols-2">
+        <div className="border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:border-r">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
+            When this works
+          </p>
+          <ul className="mt-2 space-y-1">
+            {[
+              `Stock stays ${priceDir} the short strike`,
+              "Price moves slowly or sideways",
+              "No big events before expiration",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2 text-[12px] leading-5 text-slate-600">
+                <span className="mt-0.5 text-emerald-500">·</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-500">
+            When this struggles
+          </p>
+          <ul className="mt-2 space-y-1">
+            {[
+              `Stock ${moveDir} toward the short strike`,
+              "Volatility spikes or news hits",
+              "Price breaks through the short strike",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2 text-[12px] leading-5 text-slate-600">
+                <span className="mt-0.5 text-rose-400">·</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
   );
 }
 

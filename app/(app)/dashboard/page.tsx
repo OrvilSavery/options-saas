@@ -3,6 +3,7 @@ import { getRecentAnalysisRuns } from "@/lib/analysis-history/getRecentAnalysisR
 import { getAllAnalysisRuns } from "@/lib/analysis-history/getAllAnalysisRuns";
 import { getWatchlistItems } from "@/lib/watchlist/getWatchlistItems";
 import { buildAnalyzerHref } from "@/lib/analyzer/reopen/buildAnalyzerHref";
+import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 
 type UnknownRecord = Record<string, unknown>;
 type Decision = "valid" | "watchlist" | "pass" | "unknown";
@@ -169,13 +170,6 @@ function verdictBarColor(decision: Decision) {
   }
 }
 
-function greeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning.";
-  if (hour < 17) return "Good afternoon.";
-  return "Good evening.";
-}
-
 function distributionCounts(runs: UnknownRecord[]): VerdictCounts {
   const initialCounts: VerdictCounts = { valid: 0, watchlist: 0, pass: 0 };
 
@@ -238,7 +232,7 @@ export default async function DashboardPage() {
     <div className="mx-auto max-w-[740px] space-y-4 px-4 py-7 sm:px-6">
       <section className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight text-slate-950">{greeting()}</h1>
+          <DashboardGreeting />
           <p className="mt-1 text-[13px] text-slate-400">Here&apos;s where things stand.</p>
         </div>
         <a href="/analyzer" className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold !text-white text-white shadow-sm transition hover:bg-slate-800">

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type {
   AnalyzeMode,
   AnalyzeRequest,
@@ -69,6 +69,7 @@ export default function AnalyzerEntryForm({
   summary,
 }: AnalyzerEntryFormProps) {
   const mode = (value.mode ?? "explore") as AnalyzeMode;
+  const [helpOpen, setHelpOpen] = useState(false);
 
   if (isCollapsed) {
     return (
@@ -99,7 +100,7 @@ export default function AnalyzerEntryForm({
           Find clean setups or review your own.
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          Enter a ticker to Find setups — we’ll show only setups that clear the review rules. Or fill in the exact details to Review your setup — we’ll evaluate it honestly even if it’s not perfect.
+          Enter just a ticker to find setups that hold up. Fill in all five fields to review your exact setup.
         </p>
       </div>
 
@@ -148,6 +149,12 @@ export default function AnalyzerEntryForm({
           Review your setup
         </button>
       </div>
+
+      <p className="mt-2 text-[13px] text-slate-500">
+        {mode === "explore"
+          ? "Enter a ticker. We'll look for setups that hold up."
+          : "Enter your exact setup and we'll run the numbers on it."}
+      </p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Field label="Ticker">
@@ -237,7 +244,7 @@ export default function AnalyzerEntryForm({
         ) : (
           <div className="md:col-span-1 xl:col-span-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
             <p className="text-sm leading-6 text-slate-600">
-              Find setups checks a few near-term expirations and only shows setups worth reviewing.
+              Scans near-term expirations. Only surfaces setups that hold up under the review rules.
             </p>
           </div>
         )}
@@ -257,6 +264,32 @@ export default function AnalyzerEntryForm({
           <p className="text-sm leading-6 text-slate-600">
             Review mode always checks the exact strikes and expiration you enter.
           </p>
+        ) : null}
+      </div>
+
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50">
+        <button
+          type="button"
+          onClick={() => setHelpOpen((prev) => !prev)}
+          aria-expanded={helpOpen}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        >
+          <span className="text-[13px] font-medium text-slate-600">New to this?</span>
+          <span className="text-[11px] font-medium text-slate-400">{helpOpen ? "Hide" : "Show"}</span>
+        </button>
+        {helpOpen ? (
+          <div className="border-t border-slate-200 px-4 pb-4 pt-3">
+            <p className="text-[13px] leading-5 text-slate-600">
+              You collect a credit upfront. Your max loss is fixed — that&apos;s what makes it defined-risk.
+            </p>
+            <p className="mt-3 text-[13px] font-medium text-slate-700">EntryCheck helps you review:</p>
+            <ul className="mt-1.5 space-y-1 text-[13px] leading-5 text-slate-600">
+              <li>— how much room the trade has before hitting the short strike</li>
+              <li>— how much credit you collect relative to your risk</li>
+              <li>— how much you can lose if the trade goes against you</li>
+              <li>— whether the setup looks reasonable before entry</li>
+            </ul>
+          </div>
         ) : null}
       </div>
     </section>
