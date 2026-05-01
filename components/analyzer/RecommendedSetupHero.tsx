@@ -1,4 +1,5 @@
 import type { AnalysisMetadata, BestStrategy, ComparedSetup, Decision, EventRisk } from "@/types/analysis";
+import { buildHumanInterpretation } from "@/lib/analyzer/formatters/buildHeroInterpretation";
 
 interface RecommendedSetupHeroProps {
   ticker: string;
@@ -52,48 +53,6 @@ function warmHeadline(decision: Decision) {
   return "This one doesn’t line up well.";
 }
 
-function buildHumanInterpretation(
-  decision: Decision,
-  setup: ComparedSetup | null
-): string {
-  const room = setup?.downsideRoom;
-  const dte = setup?.daysToExpiration;
-  const creditRatio =
-    setup?.width && setup.premium != null && setup.width > 0
-      ? setup.premium / setup.width
-      : null;
-
-  if (decision === "valid") {
-    if (room != null && room >= 0.08) {
-      return "There’s decent room to the short strike and the risk is capped. Check the details before entry.";
-    }
-    if (room != null && room >= 0.05) {
-      return "Some room and a defined risk. Not wide, but it holds up.";
-    }
-    return "The risk is defined and the structure holds up. Not a lot of slack, but it clears.";
-  }
-
-  if (decision === "watchlist") {
-    if (room != null && room < 0.04) {
-      return "Not much room to the short strike. That’s the main thing holding this one back.";
-    }
-    if (dte != null && dte < 15) {
-      return "Not much time left. Less room to manage if price moves against you.";
-    }
-    if (creditRatio != null && creditRatio < 0.15) {
-      return "The credit is thin for the risk. That’s the weak spot here.";
-    }
-    return "Something here isn’t quite right. Probably better to watch it for now.";
-  }
-
-  if (room != null && room < 0.03) {
-    return "The stock is right up against your short strike. Almost no room if price moves against you.";
-  }
-  if (creditRatio != null && creditRatio < 0.12) {
-    return "You’re not collecting much for the risk. The credit doesn’t justify the exposure.";
-  }
-  return "This one is stretched — not enough room, or the credit doesn’t justify the risk.";
-}
 
 function formatCurrency(value: number | null | undefined, digits = 2) {
   if (value == null || !Number.isFinite(value)) return "—";
@@ -130,9 +89,17 @@ function buildExplanation({
   explanation: string;
 }) {
   if (decision === "pass" && setup) {
-    const room = formatPercentValue(setup.downsideRoom);
+    const rawRoom = setup.downsideRoom;
+    const room = formatPercentValue(rawRoom);
     const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} days` : null;
     if (room && dte) {
+      if (rawRoom != null && rawRoom >= 0.08) {
+        return (
+          <>
+            Short strike is <NumberText>{room}</NumberText> from current price with <NumberText>{dte}</NumberText> left. Room is not the main issue here.
+          </>
+        );
+      }
       return (
         <>
           Short strike is <NumberText>{room}</NumberText> from current price with <NumberText>{dte}</NumberText> left. Not much room if things move against you.
@@ -142,9 +109,17 @@ function buildExplanation({
   }
 
   if (decision === "watchlist" && setup) {
-    const room = formatPercentValue(setup.downsideRoom);
+    const rawRoom = setup.downsideRoom;
+    const room = formatPercentValue(rawRoom);
     const dte = setup.daysToExpiration != null ? `${Math.round(setup.daysToExpiration)} days` : null;
     if (room && dte) {
+      if (rawRoom != null && rawRoom >= 0.08) {
+        return (
+          <>
+            <NumberText>{room}</NumberText> of room with <NumberText>{dte}</NumberText> left. Room is not the main concern here.
+          </>
+        );
+      }
       return (
         <>
           <NumberText>{room}</NumberText> of room and <NumberText>{dte}</NumberText> — that&apos;s what&apos;s keeping it from looking clean.
@@ -160,7 +135,7 @@ function buildExplanation({
     if (room && dte) {
       return (
         <>
-          <NumberText>{room}</NumberText> to the short strike, <NumberText>{dte}</NumberText> left. It holds up.
+          <NumberText>{room}</NumberText> to the short strike, <NumberText>{dte}</NumberText> left. Looks workable.
         </>
       );
     }
@@ -183,6 +158,7 @@ export default function RecommendedSetupHero({
   decision,
   activeComparedSetup,
   analysisMode,
+  risks,
   explanation,
   metadata,
 }: RecommendedSetupHeroProps) {
@@ -262,7 +238,7 @@ export default function RecommendedSetupHero({
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          {buildHumanInterpretation(decision, activeComparedSetup)}
+          {buildHumanInterpretation(decision, activeComparedSetup, risks)}
         </p>
 
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">

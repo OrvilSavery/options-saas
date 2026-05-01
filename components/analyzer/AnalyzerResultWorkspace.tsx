@@ -332,10 +332,6 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
         <RiskFlags risks={visibleRisks} isOpen={riskOpen} />
       </div>
 
-      <SetupConditions setup={activeComparedSetup} decision={data.decision} />
-
-      <div className="h-2" />
-
       <section id="setup-map-section" className="overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm">
         <button type="button" onClick={() => setShowPriceContext((value) => !value)} className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left" aria-expanded={showPriceContext}>
           <span className="text-sm font-medium text-slate-800">Recent price path</span>
@@ -348,13 +344,7 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
         ) : null}
       </section>
 
-      <p className="rounded-[10px] border border-slate-100 bg-slate-50 px-4 py-2.5 text-xs text-slate-500">
-        Delayed data. Confirm live pricing in your broker before entry.
-      </p>
-
       <DataTransparencyPanel metadata={data.metadata} />
-
-      <MarketBackdropCard eventRisk={data.eventRisk} />
 
       <EventMacroRiskPanel
         eventRisk={data.eventRisk}
@@ -418,22 +408,6 @@ export default function AnalyzerResultWorkspace({ data, evidence, analysisMode, 
   );
 }
 
-function MarketBackdropCard({ eventRisk }: { eventRisk: EventRisk }) {
-  return (
-    <section className="rounded-[10px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Market backdrop</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        EntryCheck is reviewing the setup structure, not live execution. Before entry, check live bid/ask, major events before expiration, and whether price is moving quickly toward the short strike.
-      </p>
-      {(eventRisk === "medium" || eventRisk === "high") ? (
-        <p className="mt-2 text-sm leading-6 text-amber-800">
-          Event risk is worth checking before entry.
-        </p>
-      ) : null}
-    </section>
-  );
-}
-
 function MetricsRow({ setup }: { setup: ComparedSetup | null }) {
   const width = setup?.width;
   const maxLoss = deriveMaxLoss(setup);
@@ -494,62 +468,6 @@ function Metric({
       ) : null}
       {meaning ? <p className="mt-2 text-[11px] leading-4 text-slate-400">{meaning}</p> : null}
     </div>
-  );
-}
-
-function SetupConditions({
-  setup,
-  decision,
-}: {
-  setup: ComparedSetup | null;
-  decision: string;
-}) {
-  if (!setup || decision === "pass") return null;
-
-  const strategy = setup.strategy?.toLowerCase() ?? "";
-  const isBullish = strategy.includes("put") || !strategy.includes("call");
-  const priceDir = isBullish ? "above" : "below";
-  const moveDir = isBullish ? "drops" : "rallies";
-
-  return (
-    <section className="overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-sm">
-      <div className="grid gap-0 sm:grid-cols-2">
-        <div className="border-b border-slate-100 px-4 py-3 sm:border-b-0 sm:border-r">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
-            When this works
-          </p>
-          <ul className="mt-2 space-y-1">
-            {[
-              `Stock stays ${priceDir} the short strike`,
-              "Price moves slowly or sideways",
-              "No big events before expiration",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[12px] leading-5 text-slate-600">
-                <span className="mt-0.5 text-emerald-500">·</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-500">
-            When this struggles
-          </p>
-          <ul className="mt-2 space-y-1">
-            {[
-              `Stock ${moveDir} toward the short strike`,
-              "Volatility spikes or news hits",
-              "Price breaks through the short strike",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[12px] leading-5 text-slate-600">
-                <span className="mt-0.5 text-rose-400">·</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
   );
 }
 

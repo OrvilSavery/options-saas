@@ -65,6 +65,10 @@ export default function DataTransparencyPanel({ metadata }: DataTransparencyPane
         </span>
       </button>
 
+      <p className="px-5 pb-3 text-[11px] text-slate-400">
+        Delayed data. Confirm live pricing in your broker before entry.
+      </p>
+
       {expanded ? (
         <div className="grid gap-3 border-t border-slate-100 p-4">
           <div className="grid gap-3 md:grid-cols-2">
